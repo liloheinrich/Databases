@@ -10,16 +10,16 @@ from collections import Counter
 
 ########## SETUP CODE VARS ############
 
-c = 0
 lambda_value = 3.99
 # iteration = 400
 iteration = 10
 
-d = [['Sherry', 'Li', 1, .8], ['Zoe', 'Li', 2, 0.8], ['Hello', 'Li', 3, 7.2], ['Hell', 'Son', 4, 6.8]] # TODO: load here the original input data set
-q = ['firstname', 'lastname', 'id', 'status'] # TODO: load here the "quasi-identifier attributes QI (QI1, QI2, ..., QIq)" and "sensitive attribute SA". must be same length as d
+d = [['Sherry', 'Li', 1, .8, 9], ['Zoe', 'Li', 2, 0.8, 7], ['Hello', 'Li', 3, 7.2, 8], ['Hello', 'World', 4, 6.8, 6]] # TODO: load here the original input data set
+q = ['firstname', 'lastname', 'id', 'status', 'something'] # TODO: load here the "quasi-identifier attributes QI (QI1, QI2, ..., QIq)" and "sensitive attribute SA". must be same length as d
 
 d_col = [[] for i in d] # will contain columns of d as rows (aka. transposed)
-rr = [None for i in range(len(q))] # will contain 
+dp = [[None for j in d[0]] for i in d] # place to hold modified anonymized dataset, same size as d
+r = [None for i in range(len(q))] # will contain 
 nu = [0 for i in range(len(q))] # empty array to be filled with number of unique values for each q[i]
 uv = [[] for i in range(len(q))] # empty array to be filled with the unique values and number of records containing them for each q[i] 
 
@@ -43,59 +43,67 @@ print("uv", uv)
 
 ########## RECORD PLACE ############
 
-record_place = [[[None for r in range(len(d))] for c in range(nu[i])] for i in range(len(q))] # record_place_i = null_set (the size d * nu[i] for each q[i])
+record_place = [[[None for k in range(len(d))] for j in range(nu[i])] for i in range(len(q))] # record_place_i = null_set (the size d * nu[i] for each q[i])
+record_place2 = [[None for k in range(len(d))] for i in range(len(q))] # record_place_i = null_set (the size d * nu[i] for each q[i])
 print("record_place", record_place)
 
 # print("len(record_place)", len(record_place))
 # print("len(record_place[0])", len(record_place[0]))
 # print("len(record_place[0][0])", len(record_place[0][0]))
 
+print("len(q)", len(q))
+print("len(d)", len(d))
+print("len(d[0])", len(d[0]))
+
+
 for i in range (len(q)):
     for j in range(nu[i]):
         for k in range (len(d)):
-            print("i", i, "j", j, "k", k)
-            print("d[i][k]", d[i][k], " == uv[i][j]", uv[i][j][0])
-            print()
+            # print("i", i, "j", j, "k", k)
+            print("d[k][i]", d[k][i], " == uv[i][j]", uv[i][j][0])
+            # print()
 
-            if d[i][k] == uv[i][j][0]: # if k-th record value in q[i] == j-th value in sorted_u[i][j]:
-                c += 1
+            if d[k][i] == uv[i][j][0]: # if k-th record value in q[i] == j-th value in sorted_u[i][j]:
 
-                # print("i", i, "c", c, "j", j)
-                # print("record_place[i]", record_place[i])
-                # print("record_place[i][c]", record_place[i][c])
-                # print("record_place[i][c][j]", record_place[i][c][j])
-                record_place[i][c][j] = j # something about a set
+                record_place[i][j][k] = j
+                record_place2[i][k] = j
+                print()
             else:
                 continue
-        c = 0
 
-print("record_place", record_place)
+print("record_place")
+for i in range(len(record_place)):
+    print("\t", record_place[i])
+print()
+
+print("record_place2")
+for i in range(len(record_place2)):
+    print("\t", record_place2[i])
 print()
 
 
 ########## ANONYMIZE using x ??? ############
 
-
-print("len(rr)", len(rr))
+print("len(r)", len(r))
 for i in range(len(q)):
-    rr[i] = round(math.log(nu[i], 2))
-print("rr", rr)
+    r[i] = round(math.log(nu[i], 2))
+print("r", r)
 
 x = [[0.1] for i in range(len(q))]
 print("x", x)
 
 for i in range(len(q)):
-    for j in range(iteration-1): # TODO: figure out if -1 here good or not
+    for j in range(iteration): # TODO: figure out if -1 here good or not
         # print("i", i, "j", j)
         x[i].append(lambda_value * x[i][j] * (1 - x[i][j]))
 
 x_rounded = [[round(x[i][j], 3) for j in range(len(x[0]))] for i in range(len(x))]
 print("x_rounded")
-for xrr in x_rounded:
-    print("\t", xrr)
+for xr in x_rounded:
+    print("\t", xr)
 
 print("d", d)
-
+print("dp", dp)
 
 # r[i]
 # uv[i][j]
@@ -104,5 +112,7 @@ print("d", d)
 # Determine the new attribute values for the first r[i] value in sorted unique values u[i][j] based on the record places x[i][j] for qi in q[i]
 
 # Replace the chosen record values in d with the determined new values
+
+
 
 # Return Dp
