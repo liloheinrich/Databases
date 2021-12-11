@@ -5,6 +5,7 @@
 from sklearn.metrics import accuracy_score, f1_score
 import pandas as pd
 import numpy as np
+from preprocessing import format_data
 
 def KL_divergence(p, q):
     #Kullback–Leibler divergence (KL divergence) is used to quantify the difference between two distributions
@@ -42,3 +43,11 @@ def classification_accuracy(original, anonymized):
 
 def f_measure(original, anonymized):
     return f1_score(original, anonymized)
+
+
+#check that the original dataset returns what we expect
+data = format_data("cleveland.csv")
+print(classification_accuracy(data, data))
+print(probabalistic_anonymity(data, data))
+print(f_measure(data, data))
+print(KL_divergence(data, data))
