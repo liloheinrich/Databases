@@ -4,6 +4,7 @@
 #Micah Reid
 from sklearn.metrics import accuracy_score, f1_score
 import pandas as pd
+import numpy as np
 
 def KL_divergence(p, q):
     #Kullback–Leibler divergence (KL divergence) is used to quantify the difference between two distributions
@@ -25,9 +26,11 @@ def probabalistic_anonymity(original, anonymized):
     margin = .05
     #This will need to be rewritten to match the data we put in
     #maybe put into discrete categories based on margin later if necessary
+    original = np.ravel(original)
+    anonymized = np.ravel(anonymized)
+    intersection = np.intersect1d(original, anonymized)
+    inferred = len(intersection) / len(original) #then we can find the proportion that is "inferred"
 
-    union = pd.concat([original, anonymized]) # we can take union to mean "inferred" for now?
-    inferred = sum(union) / (union.size[0] * union.size[1]) #then we can find the proportion that is "inferred"
     return 1/inferred
 
 def classification_accuracy(original, anonymized):
