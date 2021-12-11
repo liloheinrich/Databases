@@ -28,8 +28,11 @@ def probabalistic_anonymity(original, anonymized):
     #maybe put into discrete categories based on margin later if necessary
     original = np.ravel(original)
     anonymized = np.ravel(anonymized)
-    intersection = np.intersect1d(original, anonymized)
-    inferred = len(intersection) / len(original) #then we can find the proportion that is "inferred"
+    intersection = 0
+    for i in range(len(original)):
+        if original[i] == anonymized[i]: #could add the "fudge factor" here if necessary
+            intersection += 1
+    inferred = intersection / len(original) #then we can find the proportion that is "inferred"
 
     return 1/inferred
 
