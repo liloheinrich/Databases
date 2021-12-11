@@ -44,6 +44,7 @@ class Anonymizer():
         """
         self.count_values()
         self.create_recordplace()
+        self.calculate_new_values()
         self.assign_new_values()
 
 
@@ -65,10 +66,13 @@ class Anonymizer():
             for c in counter.items():
                 self.uv[i].append(c)
 
+            # sorts the unique values in terms of number of uses
+            self.uv[i].sort(key=lambda x:x[1])
+
         print("number of unique values for each attribute (nu):", self.nu)
         print("tuple of (number of unique values, number of records containing that value) for each attribute (uv):", self.uv)
         print()
-        
+
 
     def create_recordplace(self):
         """
@@ -99,13 +103,14 @@ class Anonymizer():
         print()
 
 
-    def assign_new_values(self):
+    def calculate_new_values(self):
         """
-        This is where the actual changes to anonymize the dataset should happen.
-        Still in progress. TODO: finish assign_new_values()
+        This is where the new attribute values are calculated for the parts of 
+        the data that need to be replaced. Still in progress. 
+        TODO: finish calculate_new_values()
 
-        Theoretically computes the number of crucial unique values, designates 
-        new attribute values for them, and replaces them in the records / data.
+        Theoretically computes the number of crucial unique values and designates 
+        new attribute values for them.
         """
 
         # r is an array that corresponds to the data columns / attributes. it will contain the number 
@@ -124,6 +129,15 @@ class Anonymizer():
         for xr in x_rounded:
             print("\t", xr)
 
+    def assign_new_values(self):
+        """
+        This is where the actual changes to anonymize the dataset should happen.
+        Still in progress. TODO: finish assign_new_values()
+
+        Theoretically replaces records containing the crucial unique values with 
+        new attribute values designated by calculate_new_values().
+        """
+        
         print("original data row 0 (d[0]):", self.d[0])
         print("anonymized data row 0 (dp[0]):", self.dp[0])
 
