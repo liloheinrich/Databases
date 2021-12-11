@@ -1,3 +1,5 @@
+# dataset: https://archive.ics.uci.edu/ml/datasets/Heart+Disease
+
 """
 column_headers: list of headers for csv, q in algorithm
 format_data: formats cleveland.csv into list of lists each containing row of 
@@ -117,7 +119,7 @@ def format_data(data):
                     final_list.append(sublist)
                     sublist = []
 
-        print(final_list)
+        # print(final_list)
         return (column_headers, final_list)
 
 if __name__ == "__main__":
