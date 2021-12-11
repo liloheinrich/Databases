@@ -25,14 +25,16 @@ class Anonymizer():
         self.d = self.d[0:10][0:5]
         self.q = self.q[0:5]
 
-        print("d / data. # rows, # cols, first row:", len(self.d), len(self.d[0]), self.d[0])
-        print("q / attribute names. # rows, names:", len(self.q), self.q)
+        print("# rows, # cols in original data (d):", len(self.d), len(self.d[0]))
+        print("first row of original data (d):", self.d[0])
+        print("# rows, names in attribute names (q):", len(self.q), self.q)
+        print()
 
         self.d_col = [[] for i in self.d] # will contain columns of d as rows (aka. transposed)
         self.dp = [[None for j in self.d[0]] for i in self.d] # place to hold modified anonymized dataset, same size as d
-        self.r = [None for i in range(len(self.q))] # will contain ??? whatever r is TODO: fix description of r
-        self.nu = [0 for i in range(len(self.q))] # empty array to be filled with number of unique values for each q[i]
-        self.uv = [[] for i in range(len(self.q))] # empty array to be filled with the unique values and number of records containing them for each q[i] 
+        self.r = [None for i in range(len(self.q))] # will contain the number of crucial unique values for each column / q[i] 
+        self.nu = [0 for i in range(len(self.q))] # empty array to be filled with number of unique values for each column / q[i]
+        self.uv = [[] for i in range(len(self.q))] # empty array to be filled with the unique values and number of records containing them for each column / q[i] 
         self.x = [[0.1] for i in range(len(self.q))] # TODO: describe purpose of x
 
     def anonymize(self):
@@ -63,9 +65,10 @@ class Anonymizer():
             for c in counter.items():
                 self.uv[i].append(c)
 
-        print("nu", self.nu)
-        print("uv", self.uv)
-
+        print("number of unique values for each attribute (nu):", self.nu)
+        print("tuple of (number of unique values, number of records containing that value) for each attribute (uv):", self.uv)
+        print()
+        
 
     def create_recordplace(self):
         """
@@ -104,10 +107,12 @@ class Anonymizer():
         Theoretically computes the number of crucial unique values, designates 
         new attribute values for them, and replaces them in the records / data.
         """
-        print("len(r)", len(self.r))
+
+        # r is an array that corresponds to the data columns / attributes. it will contain the number 
+        # of crucial unique values, computed as round(log2(number of unique values in that column)).
         for i in range(len(self.q)):
             self.r[i] = round(math.log(self.nu[i], 2))
-        print("r", self.r)
+        print("number of crucial values per row (r):", self.r)
 
         for i in range(len(self.q)):
             for j in range(self.iterations): # TODO: figure out if -1 here good or not
