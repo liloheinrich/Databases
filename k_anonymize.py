@@ -10,57 +10,96 @@ import math
 from collections import Counter
 from preprocessing import format_data
 import pandas as pd
+import numpy as np
 
 class Anonymizer():
-    def __init__(self, data, lambda_value, iterations):
-        self.lambda_value = lambda_value
-        self.iterations = iterations
-
+    def __init__(self, data, k=3):
         # load in the data (d) and attribute / column names (q)
         # q contains the "quasi-identifier attributes QI (QI1, QI2, ..., QIq)" and "sensitive attribute SA"
         # d contains the actual dataset, with rows as each patient record. columns should correspond to q identifiers.
         (self.q, self.d) = format_data(data)
+        # print(self.d[0:10])
 
-        # use mini dataset for testing purposes
-        self.d = self.d[0:10]
-        self.q = self.q[0:5]
+        self.qs = [2,3,12]
 
-        print("number of rows, number of cols in original data (d):", len(self.d), len(self.d[0]))
-        print("first row of original data (d):", self.d[0])
-        print("number of rows, names in attribute names (q):", len(self.q), self.q)
+        print("Columns that are quasi-identifiers: ", [self.q[i] for i in self.qs])
+        print("Shape of original data (d):", len(self.d), len(self.d[0]))
         print()
 
-        self.d_col = [[] for i in self.d] # will contain columns of d as rows (aka. transposed)
-        self.dp = [[None for j in self.d[0]] for i in self.d] # place to hold modified anonymized dataset, same size as d
-        self.r = [None for i in range(len(self.q))] # will contain the number of crucial unique values for each column / q[i] 
-        self.nu = [0 for i in range(len(self.q))] # empty array to be filled with number of unique values for each column / q[i]
-        self.uv = [[] for i in range(len(self.q))] # empty array to be filled with the unique values and number of records containing them for each column / q[i] 
-        self.x = [[0.1] for i in range(len(self.q))] # TODO: describe purpose of x
+        self.k = k
 
     def anonymize(self):
         """
         Takes in a dataset, computes the number of crucial unique values, designates 
         new attribute values for them, and replaces them in the records / data.
         """
-        self.count_values()
-        self.create_recordplace()
-        self.calculate_new_values()
-        self.assign_new_values()
+        self.calculate_k()
+        self.bucket_ages(col_number=2)
+        self.calculate_k()
 
+        # self.count_values()
+        # self.create_recordplace()
+        # self.calculate_new_values()
+        # self.assign_new_values()
+
+    def calculate_k(self):
+        """
+        Calculates the minimum number of occurences of the tuples of quasi-identifiers (k-value).
+        """
+        ts = dict()
+        for i in range(len(self.d)):
+            t = tuple([self.d[i][j] for j in self.qs])
+            if ts.get(t) == None:
+                ts[t] = 1
+            else:
+                ts[t] = ts[t] + 1
+        # print("Unique tuples found:", ts)
+
+        self.tss = dict(sorted(ts.items(), key=lambda item: item[1]))
+        print("Unique tuples found, sorted:", self.tss)
+        print()
+
+        keys = list(self.tss.keys())
+        values = list(self.tss.values())
+        print("k =", values[0])
+        print()
+
+
+    def bucket_ages(self, col_number, bucket_size=10):
+        """
+        Buckets age values by given bucket size, starting at the minimum age found in the 
+        data at the age column `col_number`.
+        """
+        b = int(min(np.array(self.d)[:,col_number]))
+        for i in range(len(self.d)):
+            lower_bound = int((self.d[i][col_number] - b) / bucket_size) * bucket_size + b
+            self.d[i][col_number] = lower_bound
+        # print("Show first column of data after age-bucketing:", self.d[0])
+        # print()
+
+        print("Age buckets: ", end="")
+        for i in range(7):
+            print(bucket_size*(i-1)+b, "to", bucket_size*i+b, end=", ")
+        print(bucket_size*(6)+b, "to", bucket_size*7+b)
+        print()
 
     def count_values(self):
         """
-        Creates d_col, nu, and uv. 
+        Counts unique tuples of QIs specified by q.
             d_col is the colunmwise array of data (the transpose)
             nu is the number of unique values for each attribute / column
             uv is an array of tuples of (number of unique values, 
                 number of records containing that value) for each attribute / column
         """
+        self.d_col = [[] for i in self.d] # will contain columns of d as rows (aka. transposed)
+        self.nu = [0 for i in range(len(self.q))] # empty array to be filled with number of unique values for each column / q[i]
+        self.uv = [[] for i in range(len(self.q))] # empty array to be filled with the unique values and number of records containing them for each column / q[i] 
+        
         for i in range(len(self.q)):
             self.d_col = [row[i] for row in self.d]
             counter = Counter(self.d_col)
-            # print("counter.items()", counter.items())
-            # print()
+            print("counter.items()", counter.items())
+            print()
 
             self.nu[i] = len(counter.items())
             for c in counter.items():
@@ -167,5 +206,5 @@ lambda_value = 3.99
 iterations = 10
 data = 'cleveland.csv'
 
-anonymizer = Anonymizer(data, lambda_value, iterations)
+anonymizer = Anonymizer(data, k=3)
 anonymizer.anonymize()
