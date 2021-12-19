@@ -51,7 +51,8 @@ def anonymize(qi, target):
             column_min = execute(find_min)
             column_max = execute(find_max)
             column_inc = item[2]
-            # TODO: turn column type from INT to VARCHAR(20)
+            change_datatype = "ALTER TABLE `k-anonymized` MODIFY COLUMN {} VARCHAR(20);".format(item[1])
+            cursorObject.execute(change_datatype)
             # TODO: replace each value in column with age cluster
             k_current = find_k(qi)
             print("Generalize {}; k = {}".format(item[1], k_current))
