@@ -8,6 +8,7 @@ function
 """
 
 import pymysql
+import re
 
 # Create a connection object
 dbServerName = "127.0.0.1"
@@ -28,81 +29,132 @@ connectionObject = pymysql.connect(
 cursorObject = connectionObject.cursor()
 
 def execute(query):
+    """
+    Execute query, return output.
+    """
     cursorObject.execute(query)
     output = cursorObject.fetchall()
     return output
 
 def drop_anonymized():
+    """
+    Drop table k-anonymized.
+    """
     cursorObject.execute("DROP TABLE `k-anonymized`;")
 
 def create_anonymized():
+    """
+    Create table k-anonymized from table original, which contains unaltered 
+    data.
+    """
     cursorObject.execute("CREATE TABLE `k-anonymized` AS SELECT * FROM original;")
 
-def find_k(qi):
-    # TODO: find current k value
-
-    # Sort of sql query:
-    # SELECT [age], [sex], [smoke], [db], COUNT(*) AS [count] 
-    #       FROM [datatable] 
-    #       GROUP BY [age], [sex], [smoke], [db] 
-    #       ORDER BY [count] ASC;
-    # SELECT MIN(count) AS k_value FROM ^^^
-
-    # inspired by: stackoverflow.com/questions/5911320/how-can-i-count-unique-pairs-of-values-in-sql
-
-    # Pseudocode:
-    # SELECT all of the qi's FROM data table
-    # COUNT how many times each row is repeated (so like if 20-F-smoker is repeated 3 times)
-    # take the minimum frequency count - this is k!
-
-    print("hi")
-
+def find_k():
+    """
+    Determine k-anonymity of data. Functionality is limited to data formatted 
+    in the same way as the Cleveland dataset.
+    """
+    query = "SELECT generalized_age, sex, dm, COUNT(*) as count FROM `k-anonymized` GROUP BY generalized_age, sex, dm ORDER BY count ASC;"
+    k = execute(query)[0]["count"]
+    return k
 
 def anonymize(qi, target):
+    """
+    Anonymize data through selective suppression and generalization.
+    """
     for item in qi:
+        field = item[1]
+
+        # detemine if field is to be generalized or suppressed
         if item[0] == 'generalize':
-            # TODO: maybe use sklearn's hierarchical clustering? or Lilo's code
-            find_min = "SELECT MIN({}) FROM {}".format(item[1], "`k-anonymized`")
-            find_max = "SELECT MAX({}) FROM {}".format(item[1], "`k-anonymized`")
-            column_min = execute(find_min)
-            column_max = execute(find_max)
-            column_inc = item[2]
-            new_column = "ALTER TABLE `k-anonymized` ADD generalized_{} varchar(20);".format(item[1])
-            cursorObject.execute(new_column)
-            # TODO: replace each value in column with age cluster
-            drop_column = "ALTER TABLE `k-anonymized` DROP COLUMN {};".format(item[1])
-            cursorObject.execute(drop_column)
-            k_current = find_k(qi)
-            print("Generalize {}; k = {}".format(item[1], k_current))
+            find_min = "SELECT MIN({}) AS min FROM {}".format(field, "`k-anonymized`")
+            find_max = "SELECT MAX({}) AS max FROM {}".format(field, "`k-anonymized`")
+            column_min = execute(find_min)[0]["min"]
+            column_max = execute(find_max)[0]["max"]
+            increment = item[2]
+
+            all_entries = execute("SELECT {} FROM `k-anonymized`;".format(field))
+            l = []
+            for i in all_entries:
+                l.append(i[field])
+                
+            # determine range of ages in dataset
+            ranges = list(bucket(range(column_min-1, column_max+1), increment))
+            l_ranges = []
+            for i in l:
+                for j in ranges:
+                    if i in j:
+                        l_ranges.append(j)
+
+            # create an empty column for generalized data
+            create_generalized = "ALTER TABLE `k-anonymized` ADD column generalized_age TEXT;"
+            cursorObject.execute(create_generalized)
+
+            # ensure consecutive id values
+            create_i = "SELECT @i:=0;"
+            cursorObject.execute(create_i)
+            ensure_consecutive_ids = "UPDATE `k-anonymized` SET id = @i:=@i+1;"
+            cursorObject.execute(ensure_consecutive_ids)
+
+            id_counter = 1
+            for i in l_ranges:
+                # format age range in acceptable manner (janky but foolproof)
+                string = str(i)
+                ints = re.findall('\d+', string)
+                first_int = int(ints[0])
+                second_int = int(ints[1])
+                generalize = "UPDATE `k-anonymized` SET generalized_age = '{} < {} < {}' WHERE id = {};".format(first_int, field, second_int, id_counter)
+                cursorObject.execute(generalize)
+                id_counter += 1
+            
+            # update k
+            k_current = find_k()
+            print("Generalize {}; k = {}".format(field, k_current))
 
         else:
-            # replace all values in column with -9
-            suppress = "UPDATE `k-anonymized` SET {} = -9".format(item[1])
+            # suppress by replacing all values in column with -9
+            suppress = "UPDATE `k-anonymized` SET {} = -9".format(field)
             cursorObject.execute(suppress)
-            k_current = find_k(qi)
-            print("Suppress {}; k = {}".format(item[1], k_current))
 
-        k_current = find_k(qi)
+            # update k
+            k_current = find_k()
+            print("Suppress {}; k = {}".format(field, k_current))
+
+        # determine if target k value has been reached
+        k_current = find_k()
         if k_current >= target:
-            print("k = {}".format(k_current))
             return k_current
 
-    # if k is never greater than or equal to k_target, return k
-    k_current = find_k(qi)
-    return k_current
+def bucket(lst, n):
+    """
+    Create list of ranges between age minimum and maximum.
+    """
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+        
 
 if __name__ == "__main__":
-    # format: ('type', 'field')
+    """
+    Driver code.
+    """
+    # ideal k value
     k_target = 3
+
+    # format: ('type', 'field', bucketing increment (if type = generalize))
     QI = [
-        ('generalize', 'age', 10), # age
+        ('generalize', 'age', 30), # age
         ('suppress', 'sex'), # sex
-        ('suppress', 'smoke'), # smoker status
         ('suppress', 'dm') # diabetes history
     ]
-    result = anonymize(QI, k_target)
 
-    if result < k_target:
-        print("Failed to anonymize to k = {}; k = {}".format(k_target, result))
+    # ensure unaltered table
+    drop_anonymized()
+    create_anonymized()
+
+    # determine if anonymization resulted in target k value
+    final = anonymize(QI, k_target)
+    if final < k_target:
+        print("Failed to anonymize to k = {}; k = {}".format(k_target, final))
     else:
-        print("Success; k = {}".format(result))
+        print("Success; k = {}".format(final))
+    
