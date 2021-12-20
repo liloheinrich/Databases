@@ -87,7 +87,7 @@ def anonymize(qi, target):
                         l_ranges.append(j)
 
             # create an empty column for generalized data
-            create_generalized = "ALTER TABLE `k-anonymized` ADD column generalized_age TEXT;"
+            create_generalized = "ALTER TABLE `k-anonymized` ADD COLUMN generalized_age TEXT;"
             cursorObject.execute(create_generalized)
 
             # ensure consecutive id values
@@ -107,6 +107,10 @@ def anonymize(qi, target):
                 cursorObject.execute(generalize)
                 id_counter += 1
             
+            # drop the ungeneralized column from table
+            drop_ungeneralized = "ALTER TABLE `k-anonymized` DROP COLUMN {};".format(field)
+            cursorObject.execute(drop_ungeneralized)
+
             # update k
             k_current = find_k()
             print("Generalize {}; k = {}".format(field, k_current))
