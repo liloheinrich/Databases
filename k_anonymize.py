@@ -18,9 +18,14 @@ class Anonymizer():
         # q contains the "quasi-identifier attributes QI (QI1, QI2, ..., QIq)" and "sensitive attribute SA"
         # d contains the actual dataset, with rows as each patient record. columns should correspond to q identifiers.
         (self.q, self.d) = format_data(data)
-        # print(self.d[0:10])
+        print(self.d)
 
-        self.qs = [2,3,12]
+        print("age", [self.d[i][2] for i in range(len(self.d))])
+        print("sex", [self.d[i][3] for i in range(len(self.d))])
+        print("smoke", [self.d[i][12] for i in range(len(self.d))])
+        print("dm", [self.d[i][16] for i in range(len(self.d))])
+
+        self.qs = [2,3,12,16]
 
         print("Columns that are quasi-identifiers: ", [self.q[i] for i in self.qs])
         print("Shape of original data (d):", len(self.d), len(self.d[0]))

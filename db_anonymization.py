@@ -40,7 +40,23 @@ def create_anonymized():
 
 def find_k(qi):
     # TODO: find current k value
+
+    # Sort of sql query:
+    # SELECT [age], [sex], [smoke], [db], COUNT(*) AS [count] 
+    #       FROM [datatable] 
+    #       GROUP BY [age], [sex], [smoke], [db] 
+    #       ORDER BY [count] ASC;
+    # SELECT MIN(count) AS k_value FROM ^^^
+
+    # inspired by: stackoverflow.com/questions/5911320/how-can-i-count-unique-pairs-of-values-in-sql
+
+    # Pseudocode:
+    # SELECT all of the qi's FROM data table
+    # COUNT how many times each row is repeated (so like if 20-F-smoker is repeated 3 times)
+    # take the minimum frequency count - this is k!
+
     print("hi")
+
 
 def anonymize(qi, target):
     for item in qi:
